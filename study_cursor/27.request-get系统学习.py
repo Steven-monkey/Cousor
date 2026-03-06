@@ -51,39 +51,29 @@ def basic_get():
       - headers：服务器返回的一些“元信息”（比如返回的是 JSON 还是 HTML）。
       - text：服务器返回的“正文内容”（已经帮你解码成字符串）。
     """
-    # 要请求的目标地址（注意：必须以 http:// 或 https:// 开头，否则是无效网址）
-    # 这里的 /get 是 httpbin 网站提供的一个“调试接口”，它不会真正做什么业务，只是把你发过去的信息再原样返回。
     url = "https://httpbin.org/get"
+    # 要请求的目标地址（一个字符串）；httpbin 的 /get 接口会把你发过去的信息原样返回，方便你查看自己到底发了什么。
 
-    # 第 1 步：发请求
-    # 直接发送最简单的 GET 请求：只传一个 url。
-    # requests.get(...) 会帮你：
-    # - 建立网络连接
-    # - 把 GET 请求发出去
-    # - 把服务器返回的数据封装到一个 Response 对象里，然后返回给你
     resp = requests.get(url)
+    # 用 requests.get() 发送一个最普通的 GET 请求，只传 url；函数会帮你连服务器、发请求，并把服务器的响应封装成 resp 对象返回。
 
     print("【basic_get】")
-    # 第 2 步：看结果 —— 状态码
-    # resp.status_code：HTTP 状态码，常见含义：
-    # - 200：成功
-    # - 404：你访问的地址不存在（Not Found）
-    # - 500：服务器内部错误（Internal Server Error）
+    # 打印一个小标题，方便你在控制台里区分是哪个示例函数的输出。
+
     print("状态码：", resp.status_code)
-    # 第 3 步：看结果 —— 最终 URL
-    # resp.url：服务器最终处理的 URL（如果中间有跳转，这里会显示跳转后的地址）
+    # 打印 HTTP 状态码；200 表示成功，404 表示网址不存在，500 表示服务器内部错误等。
+
     print("最终请求的 URL：", resp.url)
-    # 第 4 步：看结果 —— 响应头
-    # resp.headers：一个“类似字典”的对象，保存所有响应头信息。
-    # 这里我们只拿一个最常用的字段：Content-Type（内容类型），看服务器返回的是：
-    # - application/json（一般表示返回的是 JSON 数据）
-    # - text/html（一般表示返回的是网页 HTML）
+    # 打印服务器最终看到的 URL；如果发生了重定向（跳转），这里显示的是跳转之后的真实地址。
+
     print("部分响应头：", resp.headers.get("Content-Type"))
-    # 第 5 步：看结果 —— 文本正文
-    # resp.text：把响应体按正确的编码（比如 utf-8）解码成字符串。
-    # 为了避免一次性打印太多，只截取前 100 个字符给你看一个大概。
+    # 打印响应头里 Content-Type 这一项；它告诉你服务器返回的数据类型是 JSON、HTML 还是其它格式。
+
     print("文本响应正文前 100 个字符：", resp.text[:100])
+    # 打印响应正文（页面/数据内容）前 100 个字符；resp.text 是把服务器返回的字节数据按编码（通常是 utf-8）解码后的字符串。
+
     print("-" * 60)
+    # 打印一条分隔线，让不同示例的输出在控制台里更容易区分。
 
 
 def get_with_params():
@@ -103,31 +93,31 @@ def get_with_params():
     - params 参数一定是一个“普通的 Python 字典”。
     - 最终实际访问的 URL 可以通过 resp.url 看到，非常直观。
     """
-    url = "https://httpbin.org/get"  # 依旧使用 httpbin 的 /get 接口进行演示
+    url = "https://httpbin.org/get"
+    # 还是使用 httpbin 的 /get 接口；这一次我们会往里面加查询参数（?key=value 的那种）。
 
-    # params：查询参数字典，会被自动编码到 URL 查询字符串中。
-    # 什么是“查询字符串”？就是在 URL 后面用 ? 开头，多个 key=value 用 & 连接的那段内容。
-    # 例如最终会变成类似这样：
-    # https://httpbin.org/get?name=侯金双&city=广东&page=1&size=10
     params = {
-        "name": "侯金双",  # 普通字符串参数
-        "city": "广东",  # 非 ASCII 字符（比如中文）会被自动进行 URL 编码，你不用手动处理
-        "page": 1,  # 数字也可以，requests 会自动转为字符串
-        "size": 10,  # 一般分页时用于“每页条数”
+        "name": "侯金双",
+        "city": "广东",
+        "page": 1,
+        "size": 10,
     }
+    # 定义一个字典，里面放要拼到 URL 后面的查询参数；键是参数名，值是参数值（包括中文和数字，requests 会自动帮你转成字符串并做 URL 编码）。
 
-    # 发送 GET 请求时，把 params=... 传进去即可，其他用法和最简单的 GET 完全一样
     resp = requests.get(url, params=params)
+    # 发送 GET 请求，这次额外传入 params=params；requests 会自动把这个字典转成 ?name=...&city=... 这样的查询字符串拼到 URL 后面。
 
     print("【get_with_params】")
-    # 最终 URL 中会包含编码之后的查询参数（你可以把这一行输出复制到浏览器里打开试试）
+    # 打印一个小标题，标记这是“GET 带参数”的示例输出。
+
     print("最终 URL：", resp.url)
-    # httpbin 会把“它解析出来的查询参数”放到 json 结果中的 args 字段里。
-    # resp.json()：把响应体按 JSON 格式解析成 Python 字典：
-    # - 用的时候就把它当成普通的 dict 操作就行，比如 data["args"]
-    # - 如果服务器不是返回的 JSON（比如返回的是 HTML），这里会抛异常（ValueError）。
+    # 打印最终访问的完整 URL；你会看到类似 https://httpbin.org/get?name=...&city=...&page=1&size=10 这样的结果。
+
     print("JSON 形式返回的数据：", resp.json())
+    # 打印服务器返回的 JSON 数据（已经被 .json() 解析成 Python 对象）；httpbin 会把它解析到 args 字段里，你可以展开看看里面的参数是否和你发的一致。
+
     print("-" * 60)
+    # 打印分隔线，方便和其他示例区分。
 
 
 def get_with_headers():
@@ -403,17 +393,17 @@ def other_http_methods():
 def main():
     """统一调用上面的演示函数，方便一次性运行查看效果"""
     # 你可以根据需要注释 / 取消注释某些函数调用
-    # # basic_get()
-    # # get_with_params()
-    # # get_with_headers()
-    # # response_common_attrs()
-    # # get_timeout_and_error()
-    # # get_with_cookies()
-    # # use_session()
-    # # post_form_data()
-    # # post_json_data()
-    # # file_upload_example()
-    # other_http_methods()
+    basic_get()
+    get_with_params()
+    get_with_headers()
+    response_common_attrs()
+    get_timeout_and_error()
+    get_with_cookies()
+    use_session()
+    post_form_data()
+    post_json_data()
+    file_upload_example()
+    other_http_methods()
 
 
 if __name__ == "__main__":
