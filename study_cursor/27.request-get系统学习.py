@@ -1,11 +1,28 @@
 """
 requests 库常用用法示例（GET 为主，顺带演示其它常见用法）
 
-说明（如何使用这个文件）：
-- 每个函数都演示一个典型场景：最简单 GET、带参数、带请求头、异常处理、Session、POST、上传文件等
-- 所有示例都写成了独立的小函数，方便你在 main() 里按需注释 / 取消注释来单独运行、观察效果
-- 关键代码几乎每一行都加了中文注释，方便你逐行对照理解
-- 统一使用 `https://httpbin.org` 这个测试网站，它会把你发过去的内容原样返回，非常适合练习 HTTP
+【整体说明：如果你是完全小白，建议这么学】
+1. 把这个文件从上往下简单看一遍，大致知道有哪几种用法。
+2. 到下面的 main() 函数里，只保留一个你想看的函数，比如 basic_get()，然后运行文件，观察输出。
+3. 对着输出 + 注释，慢慢体会“我发了什么 → 服务器收到了什么 → 返回了什么”。
+4. 每次只学一个小点，比如“今天只搞懂 GET 带参数”，别一次性全记住，容易晕。
+
+【这个文件里都演示了什么】
+- 最简单 GET：只传一个网址过去，看服务器返回什么。
+- GET 带参数：给网址后面加 ?key=value 的那种请求。
+- 自定义请求头：比如伪装浏览器、带 token 等。
+- 响应常用属性：状态码、最终 URL、响应头、文本内容、二进制内容、json() 等。
+- 超时和异常处理：网不好时怎么避免程序一直卡着，怎么优雅打印错误。
+- cookies：模拟浏览器那种“登录一次，后面自动携带登录状态”。
+- Session：在多次请求之间“复用”连接和 cookies。
+- POST 表单：传统网页登录表单那种请求方式。
+- POST JSON：现在大部分接口都用的方式。
+- 上传文件：上传头像、附件之类的场景。
+- 其它 HTTP 方法：PUT / DELETE 等 REST 接口常用方法。
+
+【关于 httpbin 网站】
+- 我们统一使用 `https://httpbin.org` 这个专门用来练习 HTTP 的测试网站。
+- 你发什么参数、请求头、cookies 给它，它就会原样再“回显”给你，方便你确认自己到底发出去的是什么。
 """
 
 import json  # 用于演示手动处理 json
@@ -17,26 +34,54 @@ def basic_get():
     """
     最基础的 GET 请求
 
-    场景：像浏览器一样，请求一个页面，不带任何参数，查看返回的内容和状态。
-    关键点：
-    - 只传 url，不带 params / headers
-    - 认识 Response 对象的几个最常用属性：status_code / url / headers / text
-    """
-    # 要请求的目标地址（url 字符串必须是完整的 http/https 地址）
-    url = "https://httpbin.org/get"  # httpbin 是一个“回声”网站，会把你请求的信息原样返回，方便调试
+    场景（真实世界类比）：
+    - 就像你在浏览器地址栏里直接输入一个网址，然后按回车。
+    - 浏览器会帮你发一个“最普通的 GET 请求”，把网页内容拿回来展示给你。
 
-    # 直接发送最简单的 GET 请求
-    # requests.get(...) 返回的是一个 Response 对象，里面封装了所有响应相关的信息
+    在代码里，我们做的事情是：
+    1. 准备一个网址（url 字符串）。
+    2. 用 requests.get(url) 把这个网址“访问”一下。
+    3. 把服务器返回的“状态码、最终地址、部分头信息、正文内容”打印出来。
+
+    关键点：
+    - 这里只传了 url，没有额外参数（params）和请求头（headers），属于最简版用法。
+    - 通过这个例子，你要认识 Response 对象上最常用的这几个属性：
+      - status_code：请求结果是否成功的“信号灯”。
+      - url：最终访问到的真实地址（有时会被重定向）。
+      - headers：服务器返回的一些“元信息”（比如返回的是 JSON 还是 HTML）。
+      - text：服务器返回的“正文内容”（已经帮你解码成字符串）。
+    """
+    # 要请求的目标地址（注意：必须以 http:// 或 https:// 开头，否则是无效网址）
+    # 这里的 /get 是 httpbin 网站提供的一个“调试接口”，它不会真正做什么业务，只是把你发过去的信息再原样返回。
+    url = "https://httpbin.org/get"
+
+    # 第 1 步：发请求
+    # 直接发送最简单的 GET 请求：只传一个 url。
+    # requests.get(...) 会帮你：
+    # - 建立网络连接
+    # - 把 GET 请求发出去
+    # - 把服务器返回的数据封装到一个 Response 对象里，然后返回给你
     resp = requests.get(url)
 
     print("【basic_get】")
-    # resp.status_code：HTTP 状态码，200 表示成功，4xx/5xx 表示客户端或服务端错误
+    # 第 2 步：看结果 —— 状态码
+    # resp.status_code：HTTP 状态码，常见含义：
+    # - 200：成功
+    # - 404：你访问的地址不存在（Not Found）
+    # - 500：服务器内部错误（Internal Server Error）
     print("状态码：", resp.status_code)
-    # resp.url：服务器实际收到的 URL（有时会被重定向，这里能看到最终地址）
+    # 第 3 步：看结果 —— 最终 URL
+    # resp.url：服务器最终处理的 URL（如果中间有跳转，这里会显示跳转后的地址）
     print("最终请求的 URL：", resp.url)
-    # resp.headers：一个类似字典的对象，保存所有响应头；这里取出常见的 Content-Type 类型，看看是 json 还是 html 等
-    print("部分响应头：", resp.headers.get())
-    # resp.text：把响应体按编码解码成字符串；这里只打印前 100 个字符，避免太长
+    # 第 4 步：看结果 —— 响应头
+    # resp.headers：一个“类似字典”的对象，保存所有响应头信息。
+    # 这里我们只拿一个最常用的字段：Content-Type（内容类型），看服务器返回的是：
+    # - application/json（一般表示返回的是 JSON 数据）
+    # - text/html（一般表示返回的是网页 HTML）
+    print("部分响应头：", resp.headers.get("Content-Type"))
+    # 第 5 步：看结果 —— 文本正文
+    # resp.text：把响应体按正确的编码（比如 utf-8）解码成字符串。
+    # 为了避免一次性打印太多，只截取前 100 个字符给你看一个大概。
     print("文本响应正文前 100 个字符：", resp.text[:100])
     print("-" * 60)
 
@@ -45,30 +90,42 @@ def get_with_params():
     """
     GET 携带查询参数（?key=value）
 
-    场景：常见的“列表分页”、“搜索条件”等都会放在 URL 的查询字符串里。
+    场景（真实世界类比）：
+    - 你在网站上“搜索商品”、“按条件筛选数据”、“翻页查看下一页列表”时，
+      浏览器其实会在网址后面加上一堆 ?key=value&key2=value2 这样的内容。
+
+    在代码里，我们做的事情是：
+    1. 把这些“搜索条件 / 分页参数”放进一个 Python 字典里。
+    2. 把这个字典通过 params= 传给 requests.get()。
+    3. requests 会自动帮你把字典转成查询字符串拼到 URL 后面。
+
     关键点：
-    - 使用 params 参数传入字典，requests 会自动帮你拼接成 ?key=value&...
-    - 可以通过 resp.url 看看最终拼出来的完整 URL 是什么样子
+    - params 参数一定是一个“普通的 Python 字典”。
+    - 最终实际访问的 URL 可以通过 resp.url 看到，非常直观。
     """
     url = "https://httpbin.org/get"  # 依旧使用 httpbin 的 /get 接口进行演示
 
-    # params：查询参数字典，会被自动编码到 URL 查询字符串中
-    # 最终效果类似：https://httpbin.org/get?name=侯金双&city=广东&page=1&size=10
+    # params：查询参数字典，会被自动编码到 URL 查询字符串中。
+    # 什么是“查询字符串”？就是在 URL 后面用 ? 开头，多个 key=value 用 & 连接的那段内容。
+    # 例如最终会变成类似这样：
+    # https://httpbin.org/get?name=侯金双&city=广东&page=1&size=10
     params = {
         "name": "侯金双",  # 普通字符串参数
-        "city": "广东",  # 非 ASCII 字符会被自动进行 URL 编码
+        "city": "广东",  # 非 ASCII 字符（比如中文）会被自动进行 URL 编码，你不用手动处理
         "page": 1,  # 数字也可以，requests 会自动转为字符串
         "size": 10,  # 一般分页时用于“每页条数”
     }
 
-    # 发送 GET 请求时，把 params=... 传进去即可
+    # 发送 GET 请求时，把 params=... 传进去即可，其他用法和最简单的 GET 完全一样
     resp = requests.get(url, params=params)
 
     print("【get_with_params】")
-    # 最终 URL 中会包含编码之后的查询参数（可以用浏览器粘贴过去看看效果）
+    # 最终 URL 中会包含编码之后的查询参数（你可以把这一行输出复制到浏览器里打开试试）
     print("最终 URL：", resp.url)
-    # httpbin 会把解析出来的查询参数放到 json 结果中的 args 字段里
-    # resp.json()：把响应体按 JSON 格式解析成 Python 字典，如果不是合法 JSON 会抛异常
+    # httpbin 会把“它解析出来的查询参数”放到 json 结果中的 args 字段里。
+    # resp.json()：把响应体按 JSON 格式解析成 Python 字典：
+    # - 用的时候就把它当成普通的 dict 操作就行，比如 data["args"]
+    # - 如果服务器不是返回的 JSON（比如返回的是 HTML），这里会抛异常（ValueError）。
     print("JSON 形式返回的数据：", resp.json())
     print("-" * 60)
 
@@ -144,15 +201,20 @@ def get_timeout_and_error():
     设置超时时间 + 基本异常处理
 
     场景：
-    - 接口很慢 / 网络不稳定时，不希望一直卡住等待，需要设置超时时间
-    - 请求失败时要能捕获异常，避免程序直接崩掉
+    - 真实开发中，网络情况不稳定，有时候接口半天不返回。
+    - 如果你不设置超时，程序可能会一直等，感觉像“卡死了”。
+    - 所以我们要：
+      1. 给请求设置一个“最长等待时间”（timeout）。
+      2. 如果超时或其它错误发生，用 try/except 把它优雅地捕获并打印出来。
     """
     # /delay/3：httpbin 提供的一个接口，会故意延迟 3 秒再返回响应
     url = "https://httpbin.org/delay/3"
 
     try:
-        # timeout=1 表示最多等 1 秒，如果 1 秒内没返回，就抛出 requests.Timeout 异常
-        # 注意：timeout 控制的是“连接 + 读取”的时间，不是整个程序的绝对时间
+        # timeout=1 表示：
+        # - 最多只愿意为这次请求等待 1 秒钟。
+        # - 如果 1 秒内没连上 / 没拿到响应，就会抛出 requests.Timeout 异常。
+        # 注意：timeout 控制的其实是“连接 + 读取”的时间，而不是程序总运行时间。
         resp = requests.get(url, timeout=1)
         print("【get_timeout_and_error】")
         print("请求成功，状态码：", resp.status_code)
@@ -243,12 +305,13 @@ def post_json_data():
     POST JSON 数据（application/json）
 
     场景：
-    - 现在大部分 RESTful / 前后端分离接口都使用 JSON 作为请求体格式
-    - 后端一般通过 request.body / request.json() 等方式来读取
+    - 现在大部分“前后端分离”的接口，都约定用 JSON 来传输数据。
+    - 你可以把 JSON 简单理解为“带双引号的字典格式”，前后端都能看懂。
+    - 后端框架（Django / Flask / FastAPI 等）一般都会提供 request.json() 这种 API 来读取 JSON 请求体。
     """
     url = "https://httpbin.org/post"
 
-    # 准备要发送的 Python 字典（会被序列化成 JSON 字符串）
+    # 准备要发送的 Python 字典（requests 会帮我们把它“序列化”为 JSON 字符串）
     payload = {
         "name": "侯金双",  # 普通字符串字段
         "age": 18,  # 数字字段
@@ -332,39 +395,20 @@ def other_http_methods():
 def main():
     """统一调用上面的演示函数，方便一次性运行查看效果"""
     # 你可以根据需要注释 / 取消注释某些函数调用
-    basic_get()
-    get_with_params()
-    get_with_headers()
-    response_common_attrs()
+    # basic_get()
+    # get_with_params()
+    # get_with_headers()
+    # response_common_attrs()
     get_timeout_and_error()
-    get_with_cookies()
-    use_session()
-    post_form_data()
-    post_json_data()
-    file_upload_example()
-    other_http_methods()
+    # get_with_cookies()
+    # use_session()
+    # post_form_data()
+    # post_json_data()
+    # file_upload_example()
+    # other_http_methods()
 
 
 if __name__ == "__main__":
     # 运行 main()，依次演示上面所有函数的效果
     # 如果你只想看某一个功能，可以临时注释掉其他函数调用
     main()
-
-    # 下面保留一个“最简版”的 GET 示例，方便快速回顾最核心用法
-    # 等价于一开始你写的那段代码，只是加上了更详细的注释
-
-    # 导入 requests 库
-    import requests
-
-    # 要请求的 URL
-    url = "https://httpbin.org/get"
-
-    # 通过 params 传查询参数，它们会出现在 URL 的 ? 后面
-    resp = requests.get(url, params={"name": "侯金双", "city": "广东"})
-
-    # Response.status_code：状态码
-    print("状态码：", resp.status_code)
-    # Response.text：把响应正文解码成字符串
-    print("响应正文：", resp.text)
-    # Response.url：最终访问的 URL（包含编码后的查询参数）
-    print("最终请求的 URL：", resp.url)
