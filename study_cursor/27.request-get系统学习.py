@@ -266,7 +266,7 @@ def use_session():
     session.headers.update({"User-Agent": "SessionClient/1.0"})
 
     # 第一次请求：访问一个专门“设置 cookie”的接口，相当于登录行为
-    session.get("https://httpbin.org/cookies/set?token=hello")
+    session.get("https://httpbin.org/cookies/set?token=hjs")
 
     # 第二次请求：查看当前携带的 cookie（注意，这里我们没有手动传 cookies 参数）
     resp = session.get("https://httpbin.org/cookies")
@@ -296,6 +296,9 @@ def post_form_data():
 
     print("【post_form_data】")
     json_data = resp.json()
+    # .get 其实是 dict 的方法，这里常见用法是传 key，比如 json_data.get("form")
+    # 不传参数的话，等价于 json_data.get(None)，通常没有意义
+    # 所以应该指定 key，例如 "form"，如下：
     print("form 字段（服务器解析出来的表单数据）：", json_data.get("form"))
     print("-" * 60)
 
@@ -305,17 +308,16 @@ def post_json_data():
     POST JSON 数据（application/json）
 
     场景：
-    - 现在大部分“前后端分离”的接口，都约定用 JSON 来传输数据。
-    - 你可以把 JSON 简单理解为“带双引号的字典格式”，前后端都能看懂。
-    - 后端框架（Django / Flask / FastAPI 等）一般都会提供 request.json() 这种 API 来读取 JSON 请求体。
+    - 现在大部分 RESTful / 前后端分离接口都使用 JSON 作为请求体格式
+    - 后端一般通过 request.body / request.json() 等方式来读取
     """
     url = "https://httpbin.org/post"
 
-    # 准备要发送的 Python 字典（requests 会帮我们把它“序列化”为 JSON 字符串）
+    # 准备要发送的 Python 字典（会被序列化成 JSON 字符串）
     payload = {
         "name": "侯金双",  # 普通字符串字段
         "age": 18,  # 数字字段
-        "skills": ["python", "requests"],  # 列表字段
+        "skills": ["足球", "游戏"],  # 列表字段
     }
 
     # 使用 json= 参数更方便，requests 会自动：
@@ -355,15 +357,21 @@ def file_upload_example():
     #
     # 这里用内存中的 bytes 模拟一个“文件”，避免必须存在真实文件
     # 第一个元素是文件名，第二个是二进制内容，第三个是 MIME 类型
-    files = {
-        "file": ("hello.txt", b"hello world", "text/plain"),
-    }
-
-    resp = requests.post(url, files=files)
-
-    print("【file_upload_example】")
-    print("服务器解析出的 files 字段：", resp.json().get("files"))
-    print("-" * 60)
+    # 上传自己本地的文件，然后请求回来
+    file_path = "study_cursor/我爱你.txt"
+    # "rb" 是 read binary 的缩写，表示以二进制模式读取文件
+    # 打开指定路径的文件（以二进制模式），这样可以实现类似“上传附件”功能
+    with open(file_path, "rb") as f:
+        # files 是 requests 上传文件时推荐的参数格式
+        # files 字典的 key 是表单字段名，这里假设叫 "file"
+        # value 是一个元组，含义依次为：文件名、文件内容（二进制）、文件类型(MIME)
+        files = {
+            "file": (file_path, f, "text/plain"),
+        }
+        resp = requests.post(url, files=files)
+        print("【file_upload_example】")
+        print("服务器解析出的 files 字段：", resp.json().get("files"))
+        print("-" * 60)
 
 
 def other_http_methods():
@@ -395,16 +403,16 @@ def other_http_methods():
 def main():
     """统一调用上面的演示函数，方便一次性运行查看效果"""
     # 你可以根据需要注释 / 取消注释某些函数调用
-    # basic_get()
-    # get_with_params()
-    # get_with_headers()
-    # response_common_attrs()
-    get_timeout_and_error()
-    # get_with_cookies()
-    # use_session()
-    # post_form_data()
-    # post_json_data()
-    # file_upload_example()
+    # # basic_get()
+    # # get_with_params()
+    # # get_with_headers()
+    # # response_common_attrs()
+    # # get_timeout_and_error()
+    # # get_with_cookies()
+    # # use_session()
+    # # post_form_data()
+    # # post_json_data()
+    # # file_upload_example()
     # other_http_methods()
 
 
